@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="DuckDuckGoImages",
-    version="1.0.1",
+    version="2.0.0",
     author="koke",
     author_email="jpobleteriquelme@gmail.com",
     description="Download images from DuckDuckGo",
