@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="DuckDuckGoImages",
-    version="2.0.0",
+    version="2.0.1",
     author="koke",
     author_email="jpobleteriquelme@gmail.com",
     description="Download images from DuckDuckGo",
@@ -15,7 +15,6 @@ setuptools.setup(
     url="https://github.com/JorgePoblete/DuckDuckGoImages",
     py_modules=["DuckDuckGoImages"],
     package_dir={"":"src"},
-    #packages=setuptools.find_packages(),
     install_requires = [
         "requests >= 2.24.0",
         "joblib >= 0.16.0",
