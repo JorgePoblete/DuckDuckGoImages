@@ -6,13 +6,13 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="DuckDuckGoImages",
-    version="1.0.0",
+    version="1.0.1",
     author="koke",
     author_email="jpobleteriquelme@gmail.com",
     description="Download images from DuckDuckGo",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="",
+    url="https://github.com/JorgePoblete/DuckDuckGoImages",
     py_modules=["DuckDuckGoImages"],
     package_dir={"":"src"},
     #packages=setuptools.find_packages(),
