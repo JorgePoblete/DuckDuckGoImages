@@ -1,5 +1,5 @@
 
- ## DuckDuckGo-Images
+ ## DuckDuckGoImages
 
 ## Instalation
 
