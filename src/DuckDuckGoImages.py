@@ -7,13 +7,32 @@ import shutil
 import random
 import requests
 from PIL import Image
+from urllib import parse
 from joblib import Parallel, delayed
 
-def download(query, folder='.', max_urls=None, thumbnails=False, parallel=False, shuffle=False, remove_folder=False):
+ALL = None
+CREATIVE_COMMONS = "Any"
+PUBLIC_DOMAIN = "Public"
+SHARE_AND_USE = "Share"
+SHARE_AND_USE_COMMECIALLY = "ShareCommercially"
+MODIFY_SHARE_AND_USE = "Modify"
+MODIFY_SHARE_AND_USE_COMMERCIALLY = "ModifyCommercially"
+
+_licenses = [
+    ALL,
+    CREATIVE_COMMONS,
+    PUBLIC_DOMAIN,
+    SHARE_AND_USE,
+    SHARE_AND_USE_COMMECIALLY,
+    MODIFY_SHARE_AND_USE,
+    MODIFY_SHARE_AND_USE_COMMERCIALLY
+]
+
+def download(query, folder='.', max_urls=None, thumbnails=False, parallel=False, shuffle=False, remove_folder=False, license=ALL):
     if thumbnails:
-        urls = get_image_thumbnails_urls(query)
+        urls = get_image_thumbnails_urls(query, license)
     else:
-        urls = get_image_urls(query)
+        urls = get_image_urls(query, license)
 
     if shuffle:
         random.shuffle(urls)
@@ -35,7 +54,7 @@ def _download(url, folder):
             filename = str(uuid.uuid4().hex)
             while os.path.exists("{}/{}.jpg".format(folder, filename)):
                 filename = str(uuid.uuid4().hex)
-            response = requests.get(url, stream=True, timeout=1.0, allow_redirects=True)
+            response = requests.get(url, stream=True, timeout=5.0, allow_redirects=True)
             with Image.open(io.BytesIO(response.content)) as im:
                 with open("{}/{}.jpg".format(folder, filename), 'wb') as out_file:
                     im.save(out_file)
@@ -59,13 +78,13 @@ def _parallel_download_urls(urls, folder):
                 downloaded += 1
     return downloaded
 
-def get_image_urls(query):
+def get_image_urls(query, license):
     token = _fetch_token(query)
-    return _fetch_search_urls(query, token)
+    return _fetch_search_urls(query, token, license)
 
-def get_image_thumbnails_urls(query):
+def get_image_thumbnails_urls(query, license):
     token = _fetch_token(query)
-    return _fetch_search_urls(query, token, what="thumbnail")
+    return _fetch_search_urls(query, token, license, what="thumbnail")
 
 def _fetch_token(query, URL="https://duckduckgo.com/"):
     res = requests.post(URL, data={'q': query})
@@ -76,33 +95,45 @@ def _fetch_token(query, URL="https://duckduckgo.com/"):
         return ""
     return match.group(1)
 
-def _fetch_search_urls(query, token, URL="https://duckduckgo.com/", what="image"):
+def _fetch_search_urls(q, token, license, URL="https://duckduckgo.com/", what="image"):
     query = {
         "vqd": token,
-        "q": query,
-        "l": "wt-wt",
+        "q": q,
+        "l": "us-en",
         "o": "json",
-        "f": ",,,",
-        "p": "2"
+        "f": ",,,,,",
+        "p": "1",
+        "s": "100",
+        "u": "bing"
     }
-    urls = []
+    if license is not None and license in _licenses:
+        query["f"] = f",,,,,license:{license}"
 
-    res = requests.get(URL+"i.js", params=query)
+    urls = []
+    _urls, next = _get_urls(f"{URL}i.js", query, what) 
+    urls.extend(_urls)
+    while next is not None:
+        query.update(parse.parse_qs(parse.urlsplit(next).query))
+        _urls, next = _get_urls(f"{URL}i.js", query, what) 
+        urls.extend(_urls)
+    return urls
+
+def _get_urls(URL, query, what):
+    urls = []
+    res = requests.get(
+        URL,
+        params=query,
+        headers={
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.55 Safari/537.36"
+        }
+    )
     if res.status_code != 200:
         return urls
 
     data = json.loads(res.text)
     for result in data["results"]:
         urls.append(result[what])
-
-    while "next" in data:
-        res = requests.get(URL+data["next"], params=query)
-        if res.status_code != 200:
-            return urls
-        data = json.loads(res.text)
-        for result in data["results"]:
-            urls.append(result[what])
-    return urls
+    return urls, data["next"] if "next" in data else None
 
 def _remove_folder(folder):
     if os.path.exists(folder):
