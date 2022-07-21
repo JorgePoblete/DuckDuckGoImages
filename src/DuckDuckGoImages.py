@@ -50,11 +50,11 @@ def tqdm_parallel(tqdm_object):
         tqdm_object.close()
 
 
-def download(query, folder='.', max_urls=None, thumbnails=False, parallel=False, shuffle=False, remove_folder=False, license=ALL):
+def download(query, folder='.', max_urls=None, thumbnails=False, parallel=False, shuffle=False, remove_folder=False, license=ALL, safe_search=True):
     if thumbnails:
-        urls = get_image_thumbnails_urls(query, license)
+        urls = get_image_thumbnails_urls(query, license, safe_search)
     else:
-        urls = get_image_urls(query, license)
+        urls = get_image_urls(query, license, safe_search)
 
     if shuffle:
         random.shuffle(urls)
@@ -101,13 +101,13 @@ def _parallel_download_urls(urls, folder):
                     downloaded += 1
     return downloaded
 
-def get_image_urls(query, license):
+def get_image_urls(query, license, safe_search):
     token = _fetch_token(query)
-    return _fetch_search_urls(query, token, license)
+    return _fetch_search_urls(query, token, license, safe_search)
 
-def get_image_thumbnails_urls(query, license):
+def get_image_thumbnails_urls(query, license, safe_search):
     token = _fetch_token(query)
-    return _fetch_search_urls(query, token, license, what="thumbnail")
+    return _fetch_search_urls(query, token, license, safe_search, what="thumbnail")
 
 def _fetch_token(query, URL="https://duckduckgo.com/"):
     res = requests.post(URL, data={'q': query})
@@ -118,14 +118,14 @@ def _fetch_token(query, URL="https://duckduckgo.com/"):
         return ""
     return match.group(1)
 
-def _fetch_search_urls(q, token, license, URL="https://duckduckgo.com/", what="image"):
+def _fetch_search_urls(q, token, license, safe_search, URL="https://duckduckgo.com/", what="image"):
     query = {
         "vqd": token,
         "q": q,
         "l": "us-en",
         "o": "json",
         "f": ",,,,,",
-        "p": "1",
+        "p": "1" if safe_search else "-1",
         "s": "100",
         "u": "bing"
     }
