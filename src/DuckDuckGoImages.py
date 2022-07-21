@@ -8,7 +8,10 @@ import random
 import requests
 from PIL import Image
 from urllib import parse
-from joblib import Parallel, delayed
+import joblib
+import contextlib
+from tqdm.auto import tqdm
+
 
 ALL = None
 CREATIVE_COMMONS = "Any"
@@ -27,6 +30,25 @@ _licenses = [
     MODIFY_SHARE_AND_USE,
     MODIFY_SHARE_AND_USE_COMMERCIALLY
 ]
+
+@contextlib.contextmanager
+def tqdm_parallel(tqdm_object):
+    """Context manager to patch joblib to display tqdm progress bar"""
+
+    def tqdm_print_progress(self):
+        if self.n_completed_tasks > tqdm_object.n:
+            n_completed = self.n_completed_tasks - tqdm_object.n
+            tqdm_object.update(n=n_completed)
+
+    original_print_progress = joblib.parallel.Parallel.print_progress
+    joblib.parallel.Parallel.print_progress = tqdm_print_progress
+
+    try:
+        yield tqdm_object
+    finally:
+        joblib.parallel.Parallel.print_progress = original_print_progress
+        tqdm_object.close()
+
 
 def download(query, folder='.', max_urls=None, thumbnails=False, parallel=False, shuffle=False, remove_folder=False, license=ALL):
     if thumbnails:
@@ -64,18 +86,19 @@ def _download(url, folder):
 
 def _download_urls(urls, folder):
     downloaded = 0
-    for url in urls:
+    for url in tqdm(urls):
         if _download(url, folder):
             downloaded += 1
     return downloaded
 
 def _parallel_download_urls(urls, folder):
     downloaded = 0
-    with Parallel(n_jobs=os.cpu_count()) as parallel:
-        results = parallel(delayed(_download)(url, folder) for url in urls)
-        for result in results:
-            if result:
-                downloaded += 1
+    with tqdm_parallel(tqdm(total=len(urls))):
+        with joblib.Parallel(n_jobs=os.cpu_count()) as parallel:
+            results = parallel(joblib.delayed(_download)(url, folder) for url in urls)
+            for result in results:
+                if result:
+                    downloaded += 1
     return downloaded
 
 def get_image_urls(query, license):

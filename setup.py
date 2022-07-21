@@ -18,7 +18,8 @@ setuptools.setup(
     install_requires = [
         "requests >= 2.24.0",
         "joblib >= 0.16.0",
-        "Pillow >= 2.2.1"
+        "Pillow >= 2.2.1",
+        "tqdm >= 4.62.3"
     ],
     extras_require = {
         "dev": [
