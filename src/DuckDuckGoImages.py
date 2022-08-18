@@ -133,7 +133,7 @@ def _fetch_search_urls(q, token, license, safe_search, URL="https://duckduckgo.c
         query["f"] = f",,,,,license:{license}"
 
     urls = []
-    _urls, next = _get_urls(f"{URL}i.js", query, what) 
+    _urls, next = _get_urls(f"{URL}i.js", query, what)
     urls.extend(_urls)
     while next is not None:
         query.update(parse.parse_qs(parse.urlsplit(next).query))
@@ -147,7 +147,7 @@ def _get_urls(URL, query, what):
         URL,
         params=query,
         headers={
-            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.55 Safari/537.36"
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"
         }
     )
     if res.status_code != 200:
